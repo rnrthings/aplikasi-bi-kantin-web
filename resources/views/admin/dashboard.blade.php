@@ -100,8 +100,8 @@
                         </form>
 
                         <form action="{{ route('admin.menu.hapus', $menu->id) }}"
-                              method="POST"
-                              onsubmit="return confirm('Hapus menu ini?')">
+                            method="POST"
+                            onsubmit="return confirm('Hapus menu ini?')">
                             @csrf
                             @method('DELETE')
                             <button class="hapus" type="submit">Hapus</button>
@@ -138,7 +138,7 @@
                     <td>{{ $p->status }}</td>
                     <td>
                         <form action="{{ route('admin.pesanan.status', $p->id) }}"
-                              method="POST">
+                            method="POST">
                             @csrf
                             @method('PUT')
                             <select name="status">

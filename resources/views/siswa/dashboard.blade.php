@@ -1,82 +1,170 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bi-Kantin - Siswa</title>
+    <title>Dashboard Siswa - Bi-Kantin</title>
     <style>
-        body { font-family:Arial; margin:0; background:#f1f5f9; color:#1e293b; }
-        header { background:#166534; color:white; padding:20px 5%; display:flex; justify-content:space-between; align-items:center; }
-        main { max-width:1000px; margin:25px auto; padding:0 16px; }
-        .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
-        .card, section { background:white; padding:20px; border-radius:12px; margin-bottom:20px; }
-        input,button { padding:10px; margin-top:8px; }
-        button { background:#15803d; color:white; border:0; border-radius:5px; cursor:pointer; }
-        table { border-collapse:collapse; width:100%; }
-        th,td { padding:10px; border-bottom:1px solid #e2e8f0; text-align:left; }
-        .pesan { background:#dcfce7; padding:12px; }
-        .error { background:#fee2e2; padding:12px; }
-        .scroll { overflow-x:auto; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            color: #1e293b;
+        }
+
+        header {
+            background: #166534;
+            color: white;
+            padding: 20px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 25px auto;
+            padding: 0 16px;
+        }
+
+        section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 22px;
+            overflow-x: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        button, select, input {
+            padding: 9px;
+            margin: 4px 0;
+        }
+
+        button {
+            cursor: pointer;
+            border: 0;
+            border-radius: 5px;
+            background: #15803d;
+            color: white;
+        }
+
+        .logout {
+            background: #dc2626;
+        }
+
+        .pesan {
+            background: #dcfce7;
+            padding: 12px;
+        }
+
+        .gagal {
+            background: #fee2e2;
+            padding: 12px;
+        }
     </style>
 </head>
 <body>
+
 <header>
-    <div><strong>BI-KANTIN</strong><br>Katalog Kantin Sekolah</div>
+    <div>
+        <strong>BI-KANTIN</strong><br>
+        Dashboard Siswa
+    </div>
+
     <form action="{{ route('logout') }}" method="POST">
         @csrf
-        <button type="submit">Logout</button>
+        <button class="logout" type="submit">Logout</button>
     </form>
 </header>
 
 <main>
     <h2>Halo, {{ session('username') }}!</h2>
-    <p>Pilih menu favoritmu dan buat pesanan.</p>
+    <p>Selamat datang di Bi-Kantin. Pilih menu favoritmu!</p>
 
     @if (session('sukses'))
         <p class="pesan">{{ session('sukses') }}</p>
     @endif
-    @if ($errors->any())
-        <p class="error">{{ $errors->first() }}</p>
+
+    @if (session('gagal'))
+        <p class="gagal">{{ session('gagal') }}</p>
     @endif
 
-    <h3>Katalog Menu</h3>
-    <div class="grid">
-        @forelse ($menus as $menu)
-            <div class="card">
-                <h3>{{ $menu->nama_menu }}</h3>
-                <p>Kategori: {{ $menu->kategori }}</p>
-                <h3>Rp{{ number_format($menu->harga, 0, ',', '.') }}</h3>
-
-                <form action="{{ route('siswa.pesan') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="menu_id"
-                           value="{{ $menu->id }}">
-                    <label>Jumlah:</label>
-                    <input type="number" name="jumlah"
-                           min="1" max="100" value="1" required>
-                    <br>
-                    <button type="submit">Pesan Sekarang</button>
-                </form>
-            </div>
-        @empty
-            <p>Belum ada menu tersedia.</p>
-        @endforelse
-    </div>
+    @if ($errors->any())
+        <p class="gagal">{{ $errors->first() }}</p>
+    @endif
 
     <section>
-        <h3>Riwayat Pesanan Saya</h3>
-        <div class="scroll">
-            <table>
-                <thead>
+        <h3>Daftar Menu Kantin</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Nama Menu</th>
+                    <th>Kategori</th>
+                    <th>Harga</th>
+                    <th>Jumlah</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @forelse ($menus as $menu)
                     <tr>
-                        <th>Menu</th>
-                        <th>Jumlah</th>
-                        <th>Total Harga</th>
-                        <th>Status</th>
+                        <td>{{ $menu->nama_menu }}</td>
+                        <td>{{ $menu->kategori }}</td>
+                        <td>Rp{{ number_format($menu->harga, 0, ',', '.') }}</td>
+                        <td>
+                        
+            <form action="{{ route('siswa.pesan', $menu->id) }}"
+                    method="POST">
+                @csrf
+
+                <input type="hidden" name="menu_id"
+                    value="{{ $menu->id }}">
+
+                <input type="number" name="jumlah"
+                    min="1" value="1" required>
+                        </td>
+                        <td>
+                                <button type="submit">Pesan</button>
+                            </form>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
+                @empty
+                    <tr>
+                        <td colspan="5">Belum ada menu tersedia.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h3>Pesanan Saya</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Menu</th>
+                    <th>Jumlah</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
                 @forelse ($pesanan as $p)
                     <tr>
                         <td>{{ $p->nama_menu }}</td>
@@ -86,14 +174,13 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4">Kamu belum mempunyai pesanan.</td>
+                        <td colspan="4">Kamu belum memiliki pesanan.</td>
                     </tr>
                 @endforelse
-                </tbody>
-            </table>
-        </div>
-        <p>Status akan terlihat setelah halaman diperbarui.</p>
+            </tbody>
+        </table>
     </section>
 </main>
+
 </body>
 </html>

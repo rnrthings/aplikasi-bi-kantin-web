@@ -6,22 +6,45 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SiswaController;
 
+// Halaman utama
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
 Route::get('/login', function () {
+    return view('login');
+})->name('login');
+
+Route::get('/tes', function () {
+    return 'Laravel berjalan dengan baik!';
+});
+
+Route::get('/tes-blade', function () {
+    return view('login');
+});
+
+// Halaman login
+Route::get('/login', function () {
     if (session()->has('user_id')) {
-        return redirect(
-            session('role') === 'siswa'
-                ? route('siswa.dashboard')
-                : route('admin.dashboard')
-        );
+        if (session('role') === 'siswa') {
+            return redirect()->route('siswa.dashboard');
+        }
+
+        if (session('role') === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if (session('role') === 'kasir') {
+            return redirect('/kasir');
+        }
+
+        abort(403);
     }
 
     return view('login');
 })->name('login');
 
+// Proses login
 Route::post('/login', function (Request $request) {
     $data = $request->validate([
         'username' => 'required|string',
@@ -32,13 +55,18 @@ Route::post('/login', function (Request $request) {
         ->where('username', $data['username'])
         ->first();
 
-    if (!$user || !hash_equals(
-        (string) $user->password,
-        (string) $data['password']
-    )) {
-        return back()->withErrors([
-            'login' => 'Username atau password salah.',
-        ])->onlyInput('username');
+    if (
+        !$user ||
+        !hash_equals(
+            (string) $user->password,
+            (string) $data['password']
+        )
+    ) {
+        return back()
+            ->withErrors([
+                'login' => 'Username atau password salah.',
+            ])
+            ->onlyInput('username');
     }
 
     $request->session()->regenerate();
@@ -53,9 +81,20 @@ Route::post('/login', function (Request $request) {
         return redirect()->route('siswa.dashboard');
     }
 
-    return redirect()->route('admin.dashboard');
+    if ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if ($user->role === 'kasir') {
+        return redirect('/kasir');
+    }
+
+    $request->session()->invalidate();
+
+    abort(403);
 })->name('login.proses');
 
+// Logout
 Route::post('/logout', function (Request $request) {
     $request->session()->invalidate();
     $request->session()->regenerateToken();
@@ -63,40 +102,35 @@ Route::post('/logout', function (Request $request) {
     return redirect()->route('login');
 })->name('logout');
 
-Route::middleware('web')->group(function () {
-    Route::get('/admin', function () {
-        abort_unless(
-            session('role') === 'admin'
-            || session('role') === 'kasir',
-            403
-        );
+// Route Admin
+Route::middleware('role:admin')
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/', [AdminController::class, 'dashboard'])
+            ->name('dashboard');
 
-        return app(AdminController::class)->dashboard();
-    })->name('admin.dashboard');
+        Route::post('/menu', [AdminController::class, 'tambahMenu'])
+            ->name('menu.tambah');
 
-    Route::post('/admin/menu', [
-        AdminController::class, 'tambahMenu'
-    ])->name('admin.menu.tambah');
+        Route::put('/menu/{id}', [AdminController::class, 'editMenu'])
+            ->name('menu.edit');
 
-    Route::put('/admin/menu/{id}', [
-        AdminController::class, 'editMenu'
-    ])->name('admin.menu.edit');
+        Route::delete('/menu/{id}', [AdminController::class, 'hapusMenu'])
+            ->name('menu.hapus');
 
-    Route::delete('/admin/menu/{id}', [
-        AdminController::class, 'hapusMenu'
-    ])->name('admin.menu.hapus');
+        Route::put('/pesanan/{id}', [AdminController::class, 'ubahStatus'])
+            ->name('pesanan.status');
+    });
 
-    Route::put('/admin/pesanan/{id}', [
-        AdminController::class, 'ubahStatus'
-    ])->name('admin.pesanan.status');
+// Route Siswa
+Route::middleware('role:siswa')
+    ->prefix('siswa')
+    ->name('siswa.')
+    ->group(function () {
+        Route::get('/', [SiswaController::class, 'dashboard'])
+            ->name('dashboard');
 
-    Route::get('/siswa', function () {
-        abort_unless(session('role') === 'siswa', 403);
-
-        return app(SiswaController::class)->dashboard();
-    })->name('siswa.dashboard');
-
-    Route::post('/siswa/pesan', [
-        SiswaController::class, 'pesan'
-    ])->middleware('web')->name('siswa.pesan');
-});
+        Route::post('/pesan', [SiswaController::class, 'pesan'])
+            ->name('pesan');
+    });
