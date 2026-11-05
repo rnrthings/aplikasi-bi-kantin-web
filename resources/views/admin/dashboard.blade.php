@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -73,15 +72,15 @@
                 <tr>
                     <td>
                         <form action="{{ route('admin.menu.edit', $menu->id) }}"
-                              method="POST">
+                            method="POST">
                             @csrf
                             @method('PUT')
                             <input name="nama_menu"
-                                   value="{{ $menu->nama_menu }}" required>
+                                value="{{ $menu->nama_menu }}" required>
                     </td>
                     <td>
                             <input name="harga" type="number" min="1"
-                                   value="{{ $menu->harga }}" required>
+                                value="{{ $menu->harga }}" required>
                     </td>
                     <td>
                             <select name="kategori">
