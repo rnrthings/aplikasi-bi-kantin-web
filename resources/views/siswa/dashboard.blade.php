@@ -123,6 +123,7 @@
                     <th>Kantin</th>
                     <th>Kategori</th>
                     <th>Harga</th>
+                    <th>Stok</th>
                     <th>Jumlah</th>
                     <th>Aksi</th>
                 </tr>
@@ -145,29 +146,38 @@
                         <td>{{ $menu->kategori }}</td>
                         <td>Rp{{ number_format($menu->harga, 0, ',', '.') }}</td>
                         <td>
-                        
-            <form action="{{ route('siswa.pesan') }}"
-                    method="POST">
-                @csrf
-
-                <input type="hidden" name="menu_id"
-                    value="{{ $menu->id_menu }}">
-
-                <input type="number" name="jumlah"
-                    min="1" value="1" required>
-                <select name="metode_bayar" required>
-                    <option value="Tunai">Tunai</option>
-                    <option value="QRIS">QRIS</option>
-                </select>
+                            {{ $menu->stok > 0 ? $menu->stok : 'Stok Habis' }}
                         </td>
-                        <td>
-                                <button type="submit">Pesan</button>
-                            </form>
-                        </td>
+                        @if ($menu->stok > 0)
+                            <td>
+                                <input form="order-menu-{{ $menu->id_menu }}"
+                                    type="number" name="jumlah" min="1"
+                                    max="{{ min(100, $menu->stok) }}"
+                                    value="1" required>
+                            </td>
+                            <td>
+                                <form id="order-menu-{{ $menu->id_menu }}"
+                                    action="{{ route('siswa.pesan') }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="menu_id"
+                                        value="{{ $menu->id_menu }}">
+                                </form>
+                                <select form="order-menu-{{ $menu->id_menu }}"
+                                    name="metode_bayar" required>
+                                    <option value="Tunai">Tunai</option>
+                                    <option value="QRIS">QRIS</option>
+                                </select>
+                                <button form="order-menu-{{ $menu->id_menu }}"
+                                    type="submit">Pesan</button>
+                            </td>
+                        @else
+                            <td>—</td>
+                            <td><span class="gagal">Stok Habis</span></td>
+                        @endif
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7">Belum ada menu tersedia.</td>
+                        <td colspan="8">Belum ada menu tersedia.</td>
                     </tr>
                 @endforelse
             </tbody>

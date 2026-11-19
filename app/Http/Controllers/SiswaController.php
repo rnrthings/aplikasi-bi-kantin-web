@@ -62,9 +62,24 @@ class SiswaController extends Controller
 
         abort_if(! $siswa || ! $siswa->nis, 403);
 
-        $menu = Menu::findOrFail($data['menu_id']);
+        $berhasil = DB::transaction(function () use ($data, $siswa) {
+            $menu = Menu::query()
+                ->lockForUpdate()
+                ->findOrFail($data['menu_id']);
 
-        DB::transaction(function () use ($data, $menu, $siswa) {
+            if ($menu->stok < $data['jumlah']) {
+                return false;
+            }
+
+            $stokDiperbarui = Menu::query()
+                ->whereKey($menu->id_menu)
+                ->where('stok', '>=', $data['jumlah'])
+                ->decrement('stok', $data['jumlah']);
+
+            if ($stokDiperbarui !== 1) {
+                return false;
+            }
+
             $transaksi = Transaksi::create([
                 'nis' => $siswa->nis,
                 'id_kantin' => $menu->id_kantin,
@@ -77,7 +92,15 @@ class SiswaController extends Controller
                 'harga_saat_transaksi' => $menu->harga,
                 'subtotal' => $menu->harga * $data['jumlah'],
             ]);
+
+            return true;
         });
+
+        if (! $berhasil) {
+            return back()
+                ->withErrors(['jumlah' => 'Stok menu tidak mencukupi untuk jumlah tersebut.'])
+                ->withInput();
+        }
 
         return redirect()->route('siswa.dashboard')
             ->with('sukses', 'Pesanan berhasil dibuat.');

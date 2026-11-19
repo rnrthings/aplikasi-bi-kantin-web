@@ -118,6 +118,79 @@ class DatabaseIntegrationTest extends TestCase
             'harga_saat_transaksi' => 5000,
             'subtotal' => 10000,
         ]);
+        $this->assertDatabaseHas('menu', [
+            'id_menu' => $menuId,
+            'stok' => 8,
+        ]);
+    }
+
+    public function test_student_order_is_rejected_when_stock_is_insufficient(): void
+    {
+        DB::table('users')->insert([
+            'id' => 1,
+            'username' => 'budi_siswa',
+            'password' => Hash::make('123'),
+            'role' => 'siswa',
+            'nis' => '2024101',
+            'aktif' => true,
+        ]);
+
+        $menuId = DB::table('menu')->insertGetId([
+            'id_kantin' => 3,
+            'nama_menu' => 'Es Teh',
+            'kategori' => 'Minuman',
+            'harga' => 5000,
+            'stok' => 1,
+        ], 'id_menu');
+
+        $response = $this->withSession([
+            'user_id' => 1,
+            'role' => 'siswa',
+        ])->post('/siswa/pesan', [
+            'menu_id' => $menuId,
+            'jumlah' => 2,
+            'metode_bayar' => 'QRIS',
+        ]);
+
+        $response->assertSessionHasErrors('jumlah');
+        $this->assertDatabaseMissing('transaksi', ['nis' => '2024101']);
+        $this->assertDatabaseHas('menu', [
+            'id_menu' => $menuId,
+            'stok' => 1,
+        ]);
+    }
+
+    public function test_student_dashboard_hides_order_form_for_out_of_stock_menu(): void
+    {
+        DB::table('kantin')->insert([
+            'id_kantin' => 1,
+            'nama_kantin' => 'Kantin Utama',
+        ]);
+        DB::table('users')->insert([
+            'id' => 1,
+            'username' => 'budi_siswa',
+            'password' => Hash::make('123'),
+            'role' => 'siswa',
+            'nis' => '2024101',
+            'aktif' => true,
+        ]);
+        $menuId = DB::table('menu')->insertGetId([
+            'id_kantin' => 1,
+            'nama_menu' => 'Es Teh',
+            'kategori' => 'Minuman',
+            'harga' => 5000,
+            'stok' => 0,
+        ], 'id_menu');
+
+        $response = $this->withSession([
+            'user_id' => 1,
+            'username' => 'budi_siswa',
+            'role' => 'siswa',
+        ])->get('/siswa');
+
+        $response->assertOk()
+            ->assertSee('Stok Habis')
+            ->assertDontSee('order-menu-'.$menuId);
     }
 
     public function test_role_dashboards_render_with_the_bi_kantin_schema(): void
@@ -184,6 +257,7 @@ class DatabaseIntegrationTest extends TestCase
             'nama_menu' => 'Es Teh',
             'harga' => 5000,
             'kategori' => 'Minuman',
+            'stok' => 10,
             'gambar' => UploadedFile::fake()->createWithContent(
                 'es-teh.png',
                 base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jp1sAAAAASUVORK5CYII=')
@@ -196,6 +270,7 @@ class DatabaseIntegrationTest extends TestCase
 
         $this->assertNotNull($menu->gambar);
         $this->assertStringStartsWith('menu/', $menu->gambar);
+        $this->assertSame(10, (int) $menu->stok);
         Storage::disk('public')->assertExists($menu->gambar);
     }
 
@@ -261,10 +336,63 @@ class DatabaseIntegrationTest extends TestCase
             'nama_menu' => 'Es Teh',
             'harga' => 5000,
             'kategori' => 'Minuman',
+            'stok' => 10,
             'gambar' => UploadedFile::fake()->create('gambar.txt', 10, 'text/plain'),
         ]);
 
         $response->assertSessionHasErrors('gambar');
         $this->assertDatabaseMissing('menu', ['nama_menu' => 'Es Teh']);
+    }
+
+    public function test_admin_can_set_menu_stock_to_zero(): void
+    {
+        DB::table('kantin')->insert([
+            'id_kantin' => 1,
+            'nama_kantin' => 'Kantin Utama',
+        ]);
+        $menuId = DB::table('menu')->insertGetId([
+            'id_kantin' => 1,
+            'nama_menu' => 'Es Teh',
+            'kategori' => 'Minuman',
+            'harga' => 5000,
+            'stok' => 5,
+        ], 'id_menu');
+
+        $response = $this->withSession([
+            'user_id' => 1,
+            'role' => 'admin',
+        ])->put('/admin/menu/'.$menuId.'/stok', ['stok' => 0]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $this->assertDatabaseHas('menu', [
+            'id_menu' => $menuId,
+            'stok' => 0,
+        ]);
+    }
+
+    public function test_admin_can_add_to_existing_menu_stock(): void
+    {
+        DB::table('kantin')->insert([
+            'id_kantin' => 1,
+            'nama_kantin' => 'Kantin Utama',
+        ]);
+        $menuId = DB::table('menu')->insertGetId([
+            'id_kantin' => 1,
+            'nama_menu' => 'Es Teh',
+            'kategori' => 'Minuman',
+            'harga' => 5000,
+            'stok' => 3,
+        ], 'id_menu');
+
+        $response = $this->withSession([
+            'user_id' => 1,
+            'role' => 'admin',
+        ])->post('/admin/menu/'.$menuId.'/stok/tambah', ['jumlah_stok' => 4]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $this->assertDatabaseHas('menu', [
+            'id_menu' => $menuId,
+            'stok' => 7,
+        ]);
     }
 }

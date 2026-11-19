@@ -42,6 +42,10 @@ image files are uploaded to `storage/app/public/menu`. The public storage link
 is created with `php artisan storage:link`. No SQL import is needed just to add
 photo support when using this schema.
 
+Menu inventory uses the existing `menu.stok` column. Orders reduce stock
+automatically, and admins can set a menu's stock to zero or add more stock from
+the admin dashboard.
+
 If you are starting with an empty database, import the provided phpMyAdmin SQL
 export first. Do not run `php artisan migrate` against this schema: the default
 Laravel migrations in this project describe different tables.

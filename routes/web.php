@@ -116,6 +116,12 @@ Route::middleware('role:admin')
         Route::put('/menu/{id}', [AdminController::class, 'editMenu'])
             ->name('menu.edit');
 
+        Route::put('/menu/{id}/stok', [AdminController::class, 'ubahStok'])
+            ->name('menu.stok');
+
+        Route::post('/menu/{id}/stok/tambah', [AdminController::class, 'tambahStok'])
+            ->name('menu.stok.tambah');
+
         Route::delete('/menu/{id}', [AdminController::class, 'hapusMenu'])
             ->name('menu.hapus');
 

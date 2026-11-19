@@ -61,6 +61,7 @@ class AdminController extends Controller
             'nama_menu' => 'required|string|max:100',
             'harga' => 'required|integer|min:1',
             'kategori' => 'required|string|max:30',
+            'stok' => 'required|integer|min:0|max:2147483647',
             'gambar' => [
                 'nullable',
                 'image',
@@ -126,6 +127,49 @@ class AdminController extends Controller
 
         return redirect()->route('admin.dashboard')
             ->with('sukses', 'Menu berhasil diperbarui.');
+    }
+
+    public function ubahStok(Request $request, $id)
+    {
+        $data = $request->validate([
+            'stok' => 'required|integer|min:0|max:2147483647',
+        ]);
+
+        DB::transaction(function () use ($data, $id) {
+            $menu = Menu::query()->lockForUpdate()->findOrFail($id);
+            $menu->update(['stok' => $data['stok']]);
+        });
+
+        return redirect()->route('admin.dashboard')
+            ->with('sukses', 'Stok menu berhasil diperbarui.');
+    }
+
+    public function tambahStok(Request $request, $id)
+    {
+        $data = $request->validate([
+            'jumlah_stok' => 'required|integer|min:1|max:2147483647',
+        ]);
+
+        $berhasil = DB::transaction(function () use ($data, $id) {
+            $menu = Menu::query()->lockForUpdate()->findOrFail($id);
+
+            if ($menu->stok > 2147483647 - $data['jumlah_stok']) {
+                return false;
+            }
+
+            $menu->increment('stok', $data['jumlah_stok']);
+
+            return true;
+        });
+
+        if (! $berhasil) {
+            return back()
+                ->withErrors(['jumlah_stok' => 'Jumlah stok melebihi batas yang diperbolehkan.'])
+                ->withInput();
+        }
+
+        return redirect()->route('admin.dashboard')
+            ->with('sukses', 'Stok menu berhasil ditambahkan.');
     }
 
     public function hapusMenu($id)

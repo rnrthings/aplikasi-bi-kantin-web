@@ -50,6 +50,8 @@
             @csrf
             <input name="nama_menu" placeholder="Nama menu" required>
             <input name="harga" type="number" min="1" placeholder="Harga" required>
+            <input name="stok" type="number" min="0" max="2147483647"
+                placeholder="Stok awal" required>
             <input name="gambar" type="file" accept=".jpg,.jpeg,.png,.webp">
             <select name="id_kantin" required>
                 @foreach ($kantins as $kantin)
@@ -76,6 +78,8 @@
                     <th>Harga</th>
                     <th>Kategori</th>
                     <th>Kantin</th>
+                    <th>Stok</th>
+                    <th>Tambah Stok</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -83,12 +87,14 @@
             @forelse ($menus as $menu)
                 <tr>
                     <td>
-                        <form action="{{ route('admin.menu.edit', $menu->id_menu) }}"
+                        <form id="edit-menu-{{ $menu->id_menu }}"
+                            action="{{ route('admin.menu.edit', $menu->id_menu) }}"
                             method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
                             <input name="nama_menu"
                                 value="{{ $menu->nama_menu }}" required>
+                        </form>
                     </td>
                     <td>
                             @if ($menu->gambar)
@@ -98,15 +104,18 @@
                             @else
                                 <span>Belum ada gambar</span>
                             @endif
-                            <input name="gambar" type="file"
+                            <input form="edit-menu-{{ $menu->id_menu }}"
+                                name="gambar" type="file"
                                 accept=".jpg,.jpeg,.png,.webp">
                     </td>
                     <td>
-                            <input name="harga" type="number" min="1"
+                            <input form="edit-menu-{{ $menu->id_menu }}"
+                                name="harga" type="number" min="1"
                                 value="{{ $menu->harga }}" required>
                     </td>
                     <td>
-                            <select name="kategori">
+                            <select form="edit-menu-{{ $menu->id_menu }}"
+                                name="kategori">
                                 <option value="Makanan"
                                     {{ $menu->kategori === 'Makanan' ? 'selected' : '' }}>
                                     Makanan
@@ -118,7 +127,8 @@
                             </select>
                     </td>
                     <td>
-                            <select name="id_kantin" required>
+                            <select form="edit-menu-{{ $menu->id_menu }}"
+                                name="id_kantin" required>
                                 @foreach ($kantins as $kantin)
                                     <option value="{{ $kantin->id_kantin }}"
                                         {{ $menu->id_kantin == $kantin->id_kantin ? 'selected' : '' }}>
@@ -128,9 +138,31 @@
                             </select>
                     </td>
                     <td>
-                            <button type="submit">Simpan Edit</button>
-                        </form>
-
+                            <p>
+                                {{ $menu->stok > 0 ? 'Tersedia' : 'Stok Habis' }}
+                                ({{ $menu->stok }})
+                            </p>
+                            <form action="{{ route('admin.menu.stok', $menu->id_menu) }}"
+                                method="POST">
+                                @csrf
+                                @method('PUT')
+                                <input name="stok" type="number" min="0"
+                                    max="2147483647" value="{{ $menu->stok }}" required>
+                                <button type="submit">Atur Stok</button>
+                            </form>
+                    </td>
+                    <td>
+                            <form action="{{ route('admin.menu.stok.tambah', $menu->id_menu) }}"
+                                method="POST">
+                                @csrf
+                                <input name="jumlah_stok" type="number" min="1"
+                                    max="2147483647" value="1" required>
+                                <button type="submit">Tambah</button>
+                            </form>
+                    </td>
+                    <td>
+                            <button form="edit-menu-{{ $menu->id_menu }}"
+                                type="submit">Simpan Edit</button>
                         <form action="{{ route('admin.menu.hapus', $menu->id_menu) }}"
                             method="POST"
                             onsubmit="return confirm('Hapus menu ini?')">
@@ -141,7 +173,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6">Belum ada menu.</td></tr>
+                <tr><td colspan="8">Belum ada menu.</td></tr>
             @endforelse
             </tbody>
         </table>
