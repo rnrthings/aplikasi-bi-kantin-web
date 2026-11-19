@@ -73,6 +73,13 @@
             background: #fee2e2;
             padding: 12px;
         }
+
+        .gambar-menu {
+            width: 96px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -112,6 +119,8 @@
             <thead>
                 <tr>
                     <th>Nama Menu</th>
+                    <th>Gambar</th>
+                    <th>Kantin</th>
                     <th>Kategori</th>
                     <th>Harga</th>
                     <th>Jumlah</th>
@@ -123,19 +132,33 @@
                 @forelse ($menus as $menu)
                     <tr>
                         <td>{{ $menu->nama_menu }}</td>
+                        <td>
+                            @if ($menu->gambar)
+                                <img class="gambar-menu"
+                                    src="{{ asset('storage/' . $menu->gambar) }}"
+                                    alt="Gambar {{ $menu->nama_menu }}">
+                            @else
+                                <span>Belum ada gambar</span>
+                            @endif
+                        </td>
+                        <td>{{ $menu->nama_kantin }}</td>
                         <td>{{ $menu->kategori }}</td>
                         <td>Rp{{ number_format($menu->harga, 0, ',', '.') }}</td>
                         <td>
                         
-            <form action="{{ route('siswa.pesan', $menu->id) }}"
+            <form action="{{ route('siswa.pesan') }}"
                     method="POST">
                 @csrf
 
                 <input type="hidden" name="menu_id"
-                    value="{{ $menu->id }}">
+                    value="{{ $menu->id_menu }}">
 
                 <input type="number" name="jumlah"
                     min="1" value="1" required>
+                <select name="metode_bayar" required>
+                    <option value="Tunai">Tunai</option>
+                    <option value="QRIS">QRIS</option>
+                </select>
                         </td>
                         <td>
                                 <button type="submit">Pesan</button>
@@ -144,7 +167,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5">Belum ada menu tersedia.</td>
+                        <td colspan="7">Belum ada menu tersedia.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -161,6 +184,7 @@
                     <th>Jumlah</th>
                     <th>Total</th>
                     <th>Status</th>
+                    <th>Pembayaran</th>
                 </tr>
             </thead>
 
@@ -171,10 +195,11 @@
                         <td>{{ $p->jumlah }}</td>
                         <td>Rp{{ number_format($p->total_harga, 0, ',', '.') }}</td>
                         <td>{{ $p->status }}</td>
+                        <td>{{ $p->metode_bayar }} ({{ $p->status_bayar }})</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4">Kamu belum memiliki pesanan.</td>
+                        <td colspan="5">Kamu belum memiliki pesanan.</td>
                     </tr>
                 @endforelse
             </tbody>

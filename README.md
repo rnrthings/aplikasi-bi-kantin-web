@@ -29,6 +29,23 @@ In addition, [Laracasts](https://laracasts.com) contains thousands of video tuto
 
 You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
 
+## Database setup
+
+This application uses the existing MySQL/MariaDB Bi-Kantin schema. Configure the
+connection in `.env` with `DB_CONNECTION=mysql`, the host and port used by your
+local database server, the database name, and your local credentials. The schema
+includes `users`, `siswa`, `kantin`, `menu`, `transaksi`, and
+`detail_transaksi`.
+
+Menu photos use the existing nullable `menu.gambar` column to store a path;
+image files are uploaded to `storage/app/public/menu`. The public storage link
+is created with `php artisan storage:link`. No SQL import is needed just to add
+photo support when using this schema.
+
+If you are starting with an empty database, import the provided phpMyAdmin SQL
+export first. Do not run `php artisan migrate` against this schema: the default
+Laravel migrations in this project describe different tables.
+
 ## Agentic Development
 
 Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:

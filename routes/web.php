@@ -1,10 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SiswaController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 
 // Halaman utama
 Route::get('/', function () {
@@ -53,14 +54,13 @@ Route::post('/login', function (Request $request) {
 
     $user = DB::table('users')
         ->where('username', $data['username'])
+        ->where('aktif', true)
+        ->whereNull('deleted_at')
         ->first();
 
     if (
-        !$user ||
-        !hash_equals(
-            (string) $user->password,
-            (string) $data['password']
-        )
+        ! $user ||
+        ! Hash::check($data['password'], $user->password)
     ) {
         return back()
             ->withErrors([

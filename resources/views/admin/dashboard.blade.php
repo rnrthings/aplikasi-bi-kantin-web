@@ -18,6 +18,7 @@
         .pesan { background:#dcfce7; padding:12px; }
         .gagal { background:#fee2e2; padding:12px; }
         form { margin:3px 0; }
+        .menu-image { width:80px; height:60px; object-fit:cover; border-radius:6px; }
     </style>
 </head>
 <body>
@@ -44,10 +45,19 @@
 
     <section>
         <h3>Tambah Menu</h3>
-        <form action="{{ route('admin.menu.tambah') }}" method="POST">
+        <form action="{{ route('admin.menu.tambah') }}" method="POST"
+            enctype="multipart/form-data">
             @csrf
             <input name="nama_menu" placeholder="Nama menu" required>
             <input name="harga" type="number" min="1" placeholder="Harga" required>
+            <input name="gambar" type="file" accept=".jpg,.jpeg,.png,.webp">
+            <select name="id_kantin" required>
+                @foreach ($kantins as $kantin)
+                    <option value="{{ $kantin->id_kantin }}">
+                        {{ $kantin->nama_kantin }}
+                    </option>
+                @endforeach
+            </select>
             <select name="kategori" required>
                 <option value="Makanan">Makanan</option>
                 <option value="Minuman">Minuman</option>
@@ -62,8 +72,10 @@
             <thead>
                 <tr>
                     <th>Nama Menu</th>
+                    <th>Gambar</th>
                     <th>Harga</th>
                     <th>Kategori</th>
+                    <th>Kantin</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -71,12 +83,23 @@
             @forelse ($menus as $menu)
                 <tr>
                     <td>
-                        <form action="{{ route('admin.menu.edit', $menu->id) }}"
-                            method="POST">
+                        <form action="{{ route('admin.menu.edit', $menu->id_menu) }}"
+                            method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
                             <input name="nama_menu"
                                 value="{{ $menu->nama_menu }}" required>
+                    </td>
+                    <td>
+                            @if ($menu->gambar)
+                                <img class="menu-image"
+                                    src="{{ asset('storage/' . $menu->gambar) }}"
+                                    alt="Gambar {{ $menu->nama_menu }}">
+                            @else
+                                <span>Belum ada gambar</span>
+                            @endif
+                            <input name="gambar" type="file"
+                                accept=".jpg,.jpeg,.png,.webp">
                     </td>
                     <td>
                             <input name="harga" type="number" min="1"
@@ -95,10 +118,20 @@
                             </select>
                     </td>
                     <td>
+                            <select name="id_kantin" required>
+                                @foreach ($kantins as $kantin)
+                                    <option value="{{ $kantin->id_kantin }}"
+                                        {{ $menu->id_kantin == $kantin->id_kantin ? 'selected' : '' }}>
+                                        {{ $kantin->nama_kantin }}
+                                    </option>
+                                @endforeach
+                            </select>
+                    </td>
+                    <td>
                             <button type="submit">Simpan Edit</button>
                         </form>
 
-                        <form action="{{ route('admin.menu.hapus', $menu->id) }}"
+                        <form action="{{ route('admin.menu.hapus', $menu->id_menu) }}"
                             method="POST"
                             onsubmit="return confirm('Hapus menu ini?')">
                             @csrf
@@ -108,7 +141,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4">Belum ada menu.</td></tr>
+                <tr><td colspan="6">Belum ada menu.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -124,19 +157,21 @@
                     <th>Jumlah</th>
                     <th>Total</th>
                     <th>Status</th>
+                    <th>Pembayaran</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
             @forelse ($pesanan as $p)
                 <tr>
-                    <td>{{ $p->username }}</td>
+                    <td>{{ $p->username ?? 'Siswa ' . $p->id_transaksi }}</td>
                     <td>{{ $p->nama_menu }}</td>
                     <td>{{ $p->jumlah }}</td>
                     <td>Rp{{ number_format($p->total_harga, 0, ',', '.') }}</td>
                     <td>{{ $p->status }}</td>
+                    <td>{{ $p->metode_bayar }} ({{ $p->status_bayar }})</td>
                     <td>
-                        <form action="{{ route('admin.pesanan.status', $p->id) }}"
+                        <form action="{{ route('admin.pesanan.status', $p->id_transaksi) }}"
                             method="POST">
                             @csrf
                             @method('PUT')
@@ -145,8 +180,7 @@
                                     'Menunggu Konfirmasi',
                                     'Sedang Dimasak',
                                     'Siap Diambil',
-                                    'Selesai',
-                                    'Lunas'
+                                    'Selesai'
                                 ] as $status)
                                     <option value="{{ $status }}"
                                         {{ $p->status === $status ? 'selected' : '' }}>
@@ -159,7 +193,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6">Belum ada pesanan masuk.</td></tr>
+                <tr><td colspan="7">Belum ada pesanan masuk.</td></tr>
             @endforelse
             </tbody>
         </table>
